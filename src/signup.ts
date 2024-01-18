@@ -1,19 +1,34 @@
 import crypto from "crypto";
-import pgp, { as } from "pg-promise";
 import { validateCpf } from "./validateCpf";
+import pgPromise from "pg-promise";
+
+
+export async function signup(input: any): Promise<any> {
+	const connection = getConnection();
+	try {
+		checkNameIsValid(input.name)
+		checkMailIsValid(input.email)
+		checkCPFIsValid(input.cpf)
+		await checkIsAccountAlreadyExists(input.email)
+		const id = genetionId();
+		if (input.isDriver) return await createDriverAccount(input, id)
+		else return await createPassengerAccount(input, id)
+	} finally {
+		await connection.$pool.end();
+	}
+}
 
 function getConnection() {
-	return pgp()("postgres://postgres:123456@localhost:5432/app")
+	return pgPromise()("postgres://postgres:123456@localhost:5432/app")
 }
 
 function genetionId() {
 	return crypto.randomUUID();
 }
 
-
 async function checkIsAccountAlreadyExists(email: string): Promise<void> {
 	if (!email) return;
-	const connection = getConnection();
+	const connection = await getConnection();
 	const [account] = await connection.query("select * from cccat15.account where email = $1", email);
 	if (!account) return;
 	throw new Error("Is account already exists")
@@ -41,34 +56,13 @@ function checkCarPlateIsValid(carPlate: any) {
 
 async function createDriverAccount(input: any, id: string): Promise<any> {
 	checkCarPlateIsValid(input.carPlate)
-	const connection = getConnection();
+	const connection = await getConnection();
 	await connection.query("insert into cccat15.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver) values ($1, $2, $3, $4, $5, $6, $7)", [id, input.name, input.email, input.cpf, input.carPlate, !!input.isPassenger, !!input.isDriver]);
 	return Promise.resolve({ accountId: id });
 }
 
 async function createPassengerAccount(input: any, id: string): Promise<any> {
-	const connection = getConnection();
+	const connection = await getConnection();
 	await connection.query("insert into cccat15.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver) values ($1, $2, $3, $4, $5, $6, $7)", [id, input.name, input.email, input.cpf, input.carPlate, !!input.isPassenger, !!input.isDriver]);
 	return Promise.resolve({ accountId: id });
 }
-
-export async function signup(input: any): Promise<any> {
-	const connection = getConnection();
-	try {
-		checkNameIsValid(input.name)
-		checkMailIsValid(input.email)
-		checkCPFIsValid(input.cpf)
-		await checkIsAccountAlreadyExists(input.email)
-		const id = genetionId();
-		if (input.isDriver) return await createDriverAccount(input, id)
-		else return await createPassengerAccount(input, id)
-	} finally {
-		await connection.$pool.end();
-	}
-}
-
-
-
-
-
-
