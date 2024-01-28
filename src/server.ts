@@ -6,6 +6,9 @@ import RequestRide from "./RequestRide"
 import { RideDAODatabase } from "./RideDAO"
 import dotenv from "dotenv";
 import path from "path";
+import GetRide from "./GetRide"
+import AcceptRide from "./AcceptRide"
+import StartRide from "./StartRide"
 
 dotenv.config({
   path: path.resolve(process.cwd(), ".env"),
@@ -21,7 +24,9 @@ const rideDAO = new RideDAODatabase()
 const signup = new Signup(accountDAO)
 const getAccount = new GetAccount(accountDAO)
 const requestRide = new RequestRide(accountDAO, rideDAO)
-
+const getRide = new GetRide(accountDAO, rideDAO)
+const acceptRide = new AcceptRide(accountDAO, rideDAO)
+const startRide = new StartRide(accountDAO, rideDAO)
 
 app.get('/', async function (req: Request, res: Response) {
   res.status(200).send("Turma 15")
@@ -52,6 +57,38 @@ app.post('/rides', async function (req: Request, res: Response) {
   try {
     const ride = await requestRide.execulte(req.body)
     res.status(201).send(ride)
+  } catch (err) {
+    console.log(err)
+    res.status(400).send(err)
+  }
+})
+
+app.get('/rides/:rideId', async function (req: Request, res: Response) {
+  try {
+    const account = await getRide.execulte(req.params.rideId)
+    res.status(200).send(account)
+  } catch (err) {
+    console.log(err)
+    res.status(400).send(err)
+  }
+})
+
+
+app.put('/rides/accept', async function (req: Request, res: Response) {
+  try {
+    await acceptRide.execulte(req.body)
+    res.status(200).send()
+  } catch (err) {
+    console.log(err)
+    res.status(400).send(err)
+  }
+})
+
+
+app.put('/rides/start', async function (req: Request, res: Response) {
+  try {
+    await startRide.execulte(req.body)
+    res.status(200).send()
   } catch (err) {
     console.log(err)
     res.status(400).send(err)
