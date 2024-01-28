@@ -9,17 +9,13 @@ export class Signup {
 	async execulte(input: any) {
 		this.checkNameIsValid(input.name)
 		this.checkMailIsValid(input.email)
-		const [accountExisten] = await this.accountDAO.getByEmail(input.email);
+		const accountExisten = await this.accountDAO.getByEmail(input.email);
 		if (accountExisten) throw new Error("Is account already exists")
 		this.checkCPFIsValid(input.cpf)
 		if (input.isDriver) this.checkCarPlateIsValid(input.carPlate)
-		input.id = this.genetionId();
+		input.id = crypto.randomUUID();
 		await this.accountDAO.save(input)
 		return Promise.resolve({ accountId: input.id });
-	}
-	
-	private genetionId() {
-		return crypto.randomUUID();
 	}
 
 	private checkNameIsValid(name: string) {
@@ -38,7 +34,7 @@ export class Signup {
 	}
 
 	private checkCarPlateIsValid(carPlate: any) {
-		if (carPlate.match(/[A-Z]{3}[0-9]{4}/)) return;
+		if (carPlate && carPlate.match(/[A-Z]{3}[0-9]{4}/)) return;
 		throw new Error("Invalid car plate")
 	}
 }

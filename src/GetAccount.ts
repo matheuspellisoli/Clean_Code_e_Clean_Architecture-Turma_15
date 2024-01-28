@@ -5,8 +5,7 @@ export default class GetAccount {
 
     async execulte(accountId: string) {
         this.checkAccountIdIsValid(accountId);
-        const [account] = await this.accountDAO.getById(accountId);
-        return account
+        return await this.accountDAO.getById(accountId);
     }
 
     private checkAccountIdIsValid(accountId: string) {
