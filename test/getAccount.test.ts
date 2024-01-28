@@ -1,6 +1,7 @@
 import pgPromise from "pg-promise";
-import { getAccount } from "../src/getAccount"
 import crypto from "crypto";
+import { AccountDAODatabase } from "../src/AccountDAO";
+import GetAccount from "../src/GetAccount";
 function genetionId() {
     return crypto.randomUUID();
 }
@@ -21,7 +22,8 @@ beforeAll(async () => {
 test("Deve testar se a busaca de conta ocorreu com sucesso", async () => {
     const id = genetionId();
     await createAccount(id)
-    const account = await getAccount(id)
+    const getAccount = new GetAccount(new AccountDAODatabase())
+    const account = await getAccount.execulte(id)
 
     expect(account.account_id).toBe(id)
     expect(account.car_plate).toBe("JYV2601")
@@ -34,9 +36,10 @@ test("Deve testar se a busaca de conta ocorreu com sucesso", async () => {
 
 
 test("Deve testar se a busaca de conta ocorreu com erro quando accountId for null", async () => {
-    
+
     try {
-        await getAccount("")
+        const getAccount = new GetAccount(new AccountDAODatabase())
+        await getAccount.execulte("")
     } catch (error: any) {
         expect(error.message).toBe("Invalid accountId")
     }
