@@ -5,7 +5,7 @@
   "main": "server.ts",
   "scripts": {
     "server": "tsc && node ./dist/src/server",
-    "debug": "ts-node-dev --inspect ./src/server"
+    "debug": "ts-node-dev ./src/server --inspect"
   },
   "author": "",
   "license": "ISC",
