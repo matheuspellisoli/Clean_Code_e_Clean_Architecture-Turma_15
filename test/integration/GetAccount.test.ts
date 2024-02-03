@@ -1,7 +1,8 @@
 import pgPromise from "pg-promise";
 import crypto from "crypto";
-import { AccountDAODatabase } from "../src/AccountDAO";
-import GetAccount from "../src/GetAccount";
+import { AccountRepositoryDatabase } from "../../src/infra/repository/AccountRepository";
+import GetAccount from "../../src/application/UserCase/GetAccount";
+import { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
 function genetionId() {
     return crypto.randomUUID();
 }
@@ -19,7 +20,7 @@ test("Deve testar se a busaca de conta ocorreu com sucesso", async () => {
     const email = `jose${genetionId()}@teste.com.br`
 
     await createAccount(id, email)
-    const getAccount = new GetAccount(new AccountDAODatabase())
+    const getAccount = new GetAccount(new AccountRepositoryDatabase(new PgPromiseAdapter()))
     const account = await getAccount.execulte(id)
 
     expect(account.accountId).toBe(id)
@@ -34,7 +35,7 @@ test("Deve testar se a busaca de conta ocorreu com sucesso", async () => {
 
 test("Deve testar se a busaca de conta ocorreu com erro quando accountId for null", async () => {
     try {
-        const getAccount = new GetAccount(new AccountDAODatabase())
+        const getAccount = new GetAccount(new AccountRepositoryDatabase(new PgPromiseAdapter()))
         await getAccount.execulte("")
     } catch (error: any) {
         expect(error.message).toBe("Invalid accountId")

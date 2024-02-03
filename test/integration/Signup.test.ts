@@ -1,20 +1,21 @@
 import pgPromise from "pg-promise";
-import { Signup } from "../src/Signup";
-import { AccountDAODatabase } from "../src/AccountDAO";
-
+import { Signup } from "../../src/application/UserCase/Signup";
+import { AccountRepositoryDatabase } from "../../src/infra/repository/AccountRepository";
+import { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
 async function getAccount(id: string) {
     const connection = pgPromise()("postgres://postgres:123456@localhost:5432/app");
     const [account] = await connection.query("select * from cccat15.account where account_id = $1", id);
     return account;
 }
 
-beforeAll(async () => {
-    const connection = pgPromise()("postgres://postgres:123456@localhost:5432/app");
-    await connection.query("TRUNCATE cccat15.account");
+
+const connection = new PgPromiseAdapter()
+afterAll(() => {
+    connection.close()
 })
 
 test("Deve testar se a criação de conta ocorreu com sucesso quando for motorista", async () => {
-    const signup = new Signup(new AccountDAODatabase())
+    const signup = new Signup(new AccountRepositoryDatabase(connection))
     const email =  `jose${Math.random()}@teste.com.br`
     const input = { name: "Jose Silva", email: email, cpf: "840.862.960-39", carPlate: "JYV2601", isPassenger: false, isDriver: true }
     const account = await signup.execulte(input)
@@ -30,7 +31,7 @@ test("Deve testar se a criação de conta ocorreu com sucesso quando for motoris
 })
 
 test("Deve testar se a criação de conta ocorreu com sucesso quando for passageiro", async () => {
-    const signup = new Signup(new AccountDAODatabase())
+    const signup = new Signup(new AccountRepositoryDatabase(connection))
     const email =  `antonio${Math.random()}@teste.com.br`
     const input = { name: "Antonio Silva", email: email, cpf: "343.151.010-87", carPlate: null, isPassenger: true, isDriver: false }
     const account = await signup.execulte(input)
@@ -46,26 +47,26 @@ test("Deve testar se a criação de conta ocorreu com sucesso quando for passage
 })
 
 test("Deve testar se a criação de conta ocorreu com erro quando CPF for invalido", async () => {
-    const signup = new Signup(new AccountDAODatabase())
+    const signup = new Signup(new AccountRepositoryDatabase(connection))
     const input = { name: "Jose Silva", email: "jose2@teste.com.br", cpf: "000.000.000-000", carPlate: "JYV2601", isPassenger: false, isDriver: true };
     await expect(async () =>{await signup.execulte(input)}).rejects.toThrow(new Error("Invalid CPF"))
 })
 
 test("Deve testar se a criação de conta ocorreu com erro quando email for invalido", async () => {
-    const signup = new Signup(new AccountDAODatabase())
+    const signup = new Signup(new AccountRepositoryDatabase(connection))
     const input = { name: "Jose Silva", email: "joseteste.com.br", cpf: "840.862.960-39", carPlate: "JYV2601", isPassenger: false, isDriver: true };
     await expect(async () =>{await signup.execulte(input)}).rejects.toThrow(new Error("Invalid email"))
 })
 
 test("Deve testar se a criação de conta ocorreu com erro quando nome for invalido", async () => {
-    const signup = new Signup(new AccountDAODatabase())
+    const signup = new Signup(new AccountRepositoryDatabase(connection))
     const input = { name: "Jose", email: "jose3@teste.com.br", cpf: "840.862.960-39", carPlate: "JYV2601", isPassenger: false, isDriver: true };
     await expect(async () =>{await signup.execulte(input)}).rejects.toThrow(new Error("Invalid name"))
 })
 
 
 test("Deve testar se a criação de conta ocorreu com erro quando já existir o email cadastrado", async () => {
-    const signup = new Signup(new AccountDAODatabase())
+    const signup = new Signup(new AccountRepositoryDatabase(connection))
     const email =  `jose${Math.random()}@teste.com.br`
     await signup.execulte({ name: "Jose Silva", email: email, cpf: "840.862.960-39", carPlate: "JYV2601", isPassenger: false, isDriver: true })
     const input = { name: "Jose Silva", email: email, cpf: "840.862.960-39", carPlate: "JYV2601", isPassenger: false, isDriver: true };
@@ -74,7 +75,7 @@ test("Deve testar se a criação de conta ocorreu com erro quando já existir o 
 
 
 test("Deve testar se a criação de conta ocorreu com erro quando placa do carro for invalida ", async () => {
-    const signup = new Signup(new AccountDAODatabase())
+    const signup = new Signup(new AccountRepositoryDatabase(connection))
     const email =  `jose${Math.random()}@teste.com.br`
     const input = { name: "Jose Silva", email: email, cpf: "840.862.960-39", carPlate: "JY9601", isPassenger: false, isDriver: true };
     await expect(async () =>{await signup.execulte(input)}).rejects.toThrow(new Error("Invalid car plate"))

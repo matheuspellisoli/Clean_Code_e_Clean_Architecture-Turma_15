@@ -1,8 +1,9 @@
 import pgPromise from "pg-promise";
 import crypto from "crypto";
-import { AccountDAODatabase } from "../src/AccountDAO";
-import GetRide from "../src/GetRide";
-import { RideDAODatabase } from "../src/RideDAO";
+import GetRide from "../../src/application/UserCase/GetRide";
+import { AccountRepositoryDatabase } from "../../src/infra/repository/AccountRepository";
+import { RideRepositoryDatabase } from "../../src/infra/repository/RideRepository";
+import { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
 function genetionId() {
     return crypto.randomUUID();
 }
@@ -31,19 +32,19 @@ test("Deve testar se a busaca de um viagem com sucesso", async () => {
     await createAccount(passengerId, false)
     await createAccount(driverId, true)
     await createRide(rideId, passengerId, driverId)
-    const getRide = new GetRide(new AccountDAODatabase(), new RideDAODatabase())
+    const getRide = new GetRide(new AccountRepositoryDatabase(new PgPromiseAdapter()), new RideRepositoryDatabase(new PgPromiseAdapter()))
     const ride = await getRide.execulte(rideId)
 
     expect(ride.distance).toBe(null)
-    expect(ride.from.lat).toBe("-30.0495304",)
-    expect(ride.from.long).toBe("-51.2313074")
+    expect(ride.fromLat).toBe("-30.0495304",)
+    expect(ride.fromLong).toBe("-51.2313074")
     expect(ride.passengerId).toBe(passengerId)
     expect(ride.driverId).toBe(driverId)
     expect(ride.rideId).toBe(ride.rideId)
     expect(ride.status).toBe("requested")
-    expect(ride.to.lat).toBe("-30.0802953")
-    expect(ride.to.long).toBe("-51.2215673")
+    expect(ride.toLat).toBe("-30.0802953")
+    expect(ride.toLong).toBe("-51.2215673")
     expect(ride.fare).toBe(null)
-    expect(ride.passenger.accountId).toBe(passengerId)
-    expect(ride.driver.accountId).toBe(driverId)
+    expect(ride.passenger?.accountId).toBe(passengerId)
+    expect(ride.driver?.accountId).toBe(driverId)
 })

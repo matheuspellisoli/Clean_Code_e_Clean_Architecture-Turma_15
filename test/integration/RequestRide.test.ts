@@ -1,13 +1,21 @@
 import pgPromise from "pg-promise";
 import crypto from "crypto";
-import { AccountDAODatabase } from "../src/AccountDAO";
-import GetAccount from "../src/GetAccount";
-import { RideDAODatabase } from "../src/RideDAO";
-import RequestRide from "../src/RequestRide";
+import GetAccount from "../../src/application/UserCase/GetAccount";
+import RequestRide from "../../src/application/UserCase/RequestRide";
+import { AccountRepositoryDatabase } from "../../src/infra/repository/AccountRepository";
+import { RideRepositoryDatabase } from "../../src/infra/repository/RideRepository";
+import { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
+
+
 
 function genetionId() {
     return crypto.randomUUID();
 }
+
+const connection = new PgPromiseAdapter()
+afterAll(() => {
+    connection.close()
+})
 
 async function createAccount(id: string, isDriver: boolean) {
     const connection = pgPromise()("postgres://postgres:123456@localhost:5432/app");
@@ -38,7 +46,7 @@ test("Deve estar a solicitação uma viagem com sucesso", async () => {
             "long": -51.2215673
         }
     }
-    const requestRide = new RequestRide(new AccountDAODatabase(), new RideDAODatabase())
+    const requestRide = new RequestRide(new AccountRepositoryDatabase(connection), new RideRepositoryDatabase(connection))
     const ride = await requestRide.execulte(input)
     expect(ride).toHaveProperty('rideId', expect.stringMatching(/^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i))
     const rideSaved = await getRide(ride.rideId)
@@ -57,6 +65,7 @@ test("Deve estar a solicitação uma viagem com sucesso", async () => {
 
 
 test("Deve testar a solicitação uma viagem com erro quando a conta for de passageiro", async () => {
+    const connection = new PgPromiseAdapter()
     const passengerId = genetionId();
     await createAccount(passengerId, true)
     const input = {
@@ -70,8 +79,9 @@ test("Deve testar a solicitação uma viagem com erro quando a conta for de pass
             "long": -51.2215673
         }
     }
-    const requestRide = new RequestRide(new AccountDAODatabase(), new RideDAODatabase())
+    const requestRide = new RequestRide(new AccountRepositoryDatabase(connection), new RideRepositoryDatabase(connection))
     await expect(async () =>{await requestRide.execulte(input)}).rejects.toThrow(new Error("User is not a passenger"))
+    await connection.close()
 })
 
 test("Deve testar a solicitação uma viagem com erro quando já tiver uma viagem", async () => {
@@ -88,7 +98,7 @@ test("Deve testar a solicitação uma viagem com erro quando já tiver uma viage
             "long": -51.2215673
         }
     }
-    const requestRide = new RequestRide(new AccountDAODatabase(), new RideDAODatabase())
+    const requestRide = new RequestRide(new AccountRepositoryDatabase(connection), new RideRepositoryDatabase(connection))
     await requestRide.execulte(input)
     await expect(async () =>{await requestRide.execulte(input)}).rejects.toThrow(new Error("There is no longer a ride for passengers"))
 })

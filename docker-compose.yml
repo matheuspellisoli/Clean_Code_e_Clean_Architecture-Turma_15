@@ -2,7 +2,7 @@ version: "3.8"
 services:
   db:
     image: postgres:15.3-alpine
-    container_name: dcs-postgres
+    container_name: postgres
     restart: always
     environment:
       POSTGRES_PASSWORD: 123456
