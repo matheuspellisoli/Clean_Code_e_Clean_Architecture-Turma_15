@@ -1,17 +1,14 @@
+import AccountRepository from "../../infra/repository/AccountRepository";
+import RideRepository from "../../infra/repository/RideRepository";
 
-// import AccountRepository from "./AccountRepository";
-// import RideDAO from "./RideRepository";
+export default class StartRide {
+    constructor(readonly rideRepository: RideRepository) { }
 
-// export default class StartRide {
-//     constructor(readonly accountRepository: AccountRepository, readonly rideDAO: RideDAO) { }
-
-//     async execulte(input: any) {
-//         const driver = await this.accountRepository.getById(input.driverId);
-//         const ride = await this.rideDAO.getById(input.rideId);
-//         if (ride.status != "accepted") throw new Error("Ride not accepted");
-//         if (ride.driverId != driver?.accountId) throw new Error("The driver is not responsible for the ride");
-//         ride.status = "in_progress";
-//         ride.driverId = input.driverId;
-//         await this.rideDAO.update(ride)
-//     }
-// }
+    async execulte(rideId: string, input: any) {
+        const ride = await this.rideRepository.getById(rideId);
+        if (ride?.getStatus() != "accepted") throw new Error("Ride not accepted");
+        if (ride.getDriverId() != input.driverId) throw new Error("The driver is not responsible for the ride");
+        ride.start()
+        await this.rideRepository.update(ride)
+    }
+}

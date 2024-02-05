@@ -1,49 +1,50 @@
 import pgPromise from "pg-promise";
 import { Signup } from "../../src/application/UserCase/Signup";
 import { AccountRepositoryDatabase } from "../../src/infra/repository/AccountRepository";
-import { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
-async function getAccount(id: string) {
-    const connection = pgPromise()("postgres://postgres:123456@localhost:5432/app");
-    const [account] = await connection.query("select * from cccat15.account where account_id = $1", id);
-    return account;
-}
+import DatabaseConnection, { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
+import GetAccount from "../../src/application/UserCase/GetAccount";
 
+let signup: Signup;
+let getAccount: GetAccount;
+let connection: DatabaseConnection = new PgPromiseAdapter();
+beforeEach(() => {
+    const accountRepository = new AccountRepositoryDatabase(connection);
+    signup = new Signup(accountRepository);
+    getAccount = new GetAccount(accountRepository);
+})
 
-const connection = new PgPromiseAdapter()
 afterAll(() => {
     connection.close()
 })
 
 test("Deve testar se a criação de conta ocorreu com sucesso quando for motorista", async () => {
-    const signup = new Signup(new AccountRepositoryDatabase(connection))
     const email =  `jose${Math.random()}@teste.com.br`
     const input = { name: "Jose Silva", email: email, cpf: "840.862.960-39", carPlate: "JYV2601", isPassenger: false, isDriver: true }
     const account = await signup.execulte(input)
     expect(account).toHaveProperty('accountId', expect.stringMatching(/^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i))
-    const accountSaved = await getAccount(account.accountId)
-    expect(accountSaved.account_id).toBe(account.accountId)
+    const accountSaved = await getAccount.execulte(account.accountId)
+    expect(accountSaved.accountId).toBe(account.accountId)
     expect(accountSaved.name).toBe("Jose Silva")
-    expect(accountSaved.car_plate).toBe("JYV2601")
+    expect(accountSaved.carPlate).toBe("JYV2601")
     expect(accountSaved.cpf).toBe("840.862.960-39")
     expect(accountSaved.email).toBe(email)
-    expect(accountSaved.is_driver).toBe(true)
-    expect(accountSaved.is_passenger).toBe(false)
+    expect(accountSaved.isDriver).toBe(true)
+    expect(accountSaved.isPassenger).toBe(false)
 })
 
 test("Deve testar se a criação de conta ocorreu com sucesso quando for passageiro", async () => {
-    const signup = new Signup(new AccountRepositoryDatabase(connection))
     const email =  `antonio${Math.random()}@teste.com.br`
     const input = { name: "Antonio Silva", email: email, cpf: "343.151.010-87", carPlate: null, isPassenger: true, isDriver: false }
     const account = await signup.execulte(input)
     expect(account).toHaveProperty('accountId', expect.stringMatching(/^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i))
-    const accountSaved = await getAccount(account.accountId)
-    expect(accountSaved.account_id).toBe(account.accountId)
+    const accountSaved = await getAccount.execulte(account.accountId)
+    expect(accountSaved.accountId).toBe(account.accountId)
     expect(accountSaved.name).toBe("Antonio Silva")
-    expect(accountSaved.car_plate).toBe(null)
+    expect(accountSaved.carPlate).toBe(null)
     expect(accountSaved.cpf).toBe("343.151.010-87")
     expect(accountSaved.email).toBe(email)
-    expect(accountSaved.is_driver).toBe(false)
-    expect(accountSaved.is_passenger).toBe(true)
+    expect(accountSaved.isDriver).toBe(false)
+    expect(accountSaved.isPassenger).toBe(true)
 })
 
 test("Deve testar se a criação de conta ocorreu com erro quando CPF for invalido", async () => {

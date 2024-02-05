@@ -1,9 +1,9 @@
 import crypto from "crypto"
 
 export default class Ride {
-    
-    private constructor(readonly rideId: string, readonly passengerId: string, readonly status: string,
-        readonly fromLat: number, readonly fromLong: number, readonly toLat: number, readonly toLong: number, readonly date: Date, readonly driverId: string | undefined, readonly fare: number | undefined, readonly distance: number| undefined ) {
+
+    private constructor(readonly rideId: string, readonly passengerId: string, private status: string,
+        readonly fromLat: number, readonly fromLong: number, readonly toLat: number, readonly toLong: number, readonly date: Date, private driverId: string | undefined, readonly fare: number | undefined, readonly distance: number | undefined) {
 
     }
 
@@ -15,7 +15,23 @@ export default class Ride {
     }
 
     static restore(rideId: string, passengerId: string, status: string,
-        fromLat: number, fromLong: number, toLat: number, toLong: number, date: Date,  driverId?: string, fare?: number, distance?: number) {
+        fromLat: number, fromLong: number, toLat: number, toLong: number, date: Date, driverId?: string, fare?: number, distance?: number) {
         return new Ride(rideId, passengerId, status, fromLat, fromLong, toLat, toLong, date, driverId, fare, distance)
+    }
+
+    public accept(driverId: string) {
+        this.status = "accepted"
+        this.driverId = driverId;
+    }
+    
+    public start() {
+        this.status = "in_progress"
+    }
+    public getStatus(): string {
+        return this.status;
+    }
+
+    public getDriverId(): string | undefined {
+        return this.driverId;
     }
 }

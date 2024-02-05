@@ -5,7 +5,7 @@ import RideRepository from "../../infra/repository/RideRepository";
 export default class RequestRide {
 
     constructor(readonly accountRepository: AccountRepository, readonly rideRepository: RideRepository) { }
-    async execulte(input: any,) {
+    async execulte(input: any) {
         const account = await this.accountRepository.getById(input.passengerId)
         if (account && !account.isPassenger ) throw Error("User is not a passenger")
         const activeRides = await this.rideRepository.getActiveRidesByPassengerId(input.passengerId)

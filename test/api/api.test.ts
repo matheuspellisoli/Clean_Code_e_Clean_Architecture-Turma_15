@@ -61,8 +61,6 @@ test("Deve testar se não cria uma conta quando ja existe um conta com o mesmo e
 
 })
 
-
-
 test("Deve testar se cria uma viagem com sucesso", async () => {
     const email = `jose${crypto.randomUUID()}@teste.com.br`
     const inputAccount = {

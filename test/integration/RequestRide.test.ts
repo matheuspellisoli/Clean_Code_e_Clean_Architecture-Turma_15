@@ -2,41 +2,37 @@ import pgPromise from "pg-promise";
 import crypto from "crypto";
 import GetAccount from "../../src/application/UserCase/GetAccount";
 import RequestRide from "../../src/application/UserCase/RequestRide";
-import { AccountRepositoryDatabase } from "../../src/infra/repository/AccountRepository";
-import { RideRepositoryDatabase } from "../../src/infra/repository/RideRepository";
-import { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
+import AccountRepository, { AccountRepositoryDatabase } from "../../src/infra/repository/AccountRepository";
+import RideRepository, { RideRepositoryDatabase } from "../../src/infra/repository/RideRepository";
+import DatabaseConnection, { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
+import { Signup } from "../../src/application/UserCase/Signup";
+import GetRide from "../../src/application/UserCase/GetRide";
 
 
+let signup: Signup;
+let requestRide: RequestRide;
+let getRide: GetRide;
+let connection: DatabaseConnection = new PgPromiseAdapter();
+beforeEach(() => {
+    const accountRepository = new AccountRepositoryDatabase(connection);
+    const rideRepository = new RideRepositoryDatabase(connection);
 
-function genetionId() {
-    return crypto.randomUUID();
-}
+    signup = new Signup(accountRepository);
+    requestRide = new RequestRide(accountRepository, rideRepository);
+    getRide = new GetRide(accountRepository, rideRepository)
+})
 
-const connection = new PgPromiseAdapter()
 afterAll(() => {
     connection.close()
 })
 
-async function createAccount(id: string, isDriver: boolean) {
-    const connection = pgPromise()("postgres://postgres:123456@localhost:5432/app");
-    const email = `jose${genetionId()}@teste.com.br`
-    const [account] = await connection.query(`INSERT INTO cccat15.account
-    (account_id, "name", email, cpf, car_plate, is_passenger, is_driver)
-    VALUES('${id}'::uuid, 'Jose Silva', '${email}', '840.862.960-39', 'JYV2601', ${!isDriver}, ${isDriver});`);
-    return account;
-}
-
-async function getRide(id: string) {
-    const connection = pgPromise()("postgres://postgres:123456@localhost:5432/app");
-    const [ride] = await connection.query("select * from cccat15.ride where ride_id = $1", id);
-    return ride;
-}
-
 test("Deve estar a solicitação uma viagem com sucesso", async () => {
-    const passengerId = genetionId();
-    await createAccount(passengerId, false)
+    const email = `jose${Math.random()}@teste.com.br`
+    const inputSignup = { name: "Jose Silva", email: email, cpf: "840.862.960-39", carPlate: "JYV2601", isPassenger: true, isDriver: false }
+    const account = await signup.execulte(inputSignup)
+
     const input = {
-        "passengerId": passengerId,
+        "passengerId": account.accountId,
         "from": {
             "lat": -30.0495304,
             "long": -51.2313074
@@ -46,30 +42,29 @@ test("Deve estar a solicitação uma viagem com sucesso", async () => {
             "long": -51.2215673
         }
     }
-    const requestRide = new RequestRide(new AccountRepositoryDatabase(connection), new RideRepositoryDatabase(connection))
     const ride = await requestRide.execulte(input)
     expect(ride).toHaveProperty('rideId', expect.stringMatching(/^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i))
-    const rideSaved = await getRide(ride.rideId)
+    const rideSaved = await getRide.execulte(ride.rideId)
     expect(rideSaved.distance).toBe(null)
-    expect(rideSaved.driver_id).toBe(null)
-    expect(rideSaved.from_lat).toBe("-30.0495304",)
-    expect(rideSaved.from_long).toBe("-51.2313074")
-    expect(rideSaved.passenger_id).toBe(passengerId)
-    expect(rideSaved.ride_id).toBe(ride.rideId)
+    expect(rideSaved.driverId).toBe(null)
+    expect(rideSaved.fromLat).toBe("-30.0495304",)
+    expect(rideSaved.fromLong).toBe("-51.2313074")
+    expect(rideSaved.passengerId).toBe(account.accountId)
+    expect(rideSaved.rideId).toBe(ride.rideId)
     expect(rideSaved.status).toBe("requested")
-    expect(rideSaved.to_lat).toBe("-30.0802953")
-    expect(rideSaved.to_long).toBe("-51.2215673")
+    expect(rideSaved.toLat).toBe("-30.0802953")
+    expect(rideSaved.toLong).toBe("-51.2215673")
     expect(rideSaved.fare).toBe(null)
-
 })
 
 
-test("Deve testar a solicitação uma viagem com erro quando a conta for de passageiro", async () => {
-    const connection = new PgPromiseAdapter()
-    const passengerId = genetionId();
-    await createAccount(passengerId, true)
+test("Deve testar a solicitação uma viagem com erro quando a conta for de motorista", async () => {
+    const email = `jose${Math.random()}@teste.com.br`
+    const inputSignup = { name: "Jose Silva", email: email, cpf: "840.862.960-39", carPlate: "JYV2601", isPassenger: false, isDriver: true }
+    const account = await signup.execulte(inputSignup)
+
     const input = {
-        "passengerId": passengerId,
+        "passengerId": account.accountId,
         "from": {
             "lat": -30.0495304,
             "long": -51.2313074
@@ -79,16 +74,15 @@ test("Deve testar a solicitação uma viagem com erro quando a conta for de pass
             "long": -51.2215673
         }
     }
-    const requestRide = new RequestRide(new AccountRepositoryDatabase(connection), new RideRepositoryDatabase(connection))
-    await expect(async () =>{await requestRide.execulte(input)}).rejects.toThrow(new Error("User is not a passenger"))
-    await connection.close()
+    await expect(async () => { await requestRide.execulte(input) }).rejects.toThrow(new Error("User is not a passenger"))
 })
 
 test("Deve testar a solicitação uma viagem com erro quando já tiver uma viagem", async () => {
-    const passengerId = genetionId();
-    await createAccount(passengerId, false)
+    const email = `jose${Math.random()}@teste.com.br`
+    const inputSignup = { name: "Jose Silva", email: email, cpf: "840.862.960-39", carPlate: "JYV2601", isPassenger: true, isDriver: false }
+    const account = await signup.execulte(inputSignup)
     const input = {
-        "passengerId": passengerId,
+        "passengerId": account.accountId,
         "from": {
             "lat": -30.0495304,
             "long": -51.2313074
@@ -98,7 +92,6 @@ test("Deve testar a solicitação uma viagem com erro quando já tiver uma viage
             "long": -51.2215673
         }
     }
-    const requestRide = new RequestRide(new AccountRepositoryDatabase(connection), new RideRepositoryDatabase(connection))
     await requestRide.execulte(input)
-    await expect(async () =>{await requestRide.execulte(input)}).rejects.toThrow(new Error("There is no longer a ride for passengers"))
+    await expect(async () => { await requestRide.execulte(input) }).rejects.toThrow(new Error("There is no longer a ride for passengers"))
 })
