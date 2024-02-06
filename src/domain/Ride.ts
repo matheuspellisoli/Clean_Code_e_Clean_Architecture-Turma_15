@@ -20,11 +20,13 @@ export default class Ride {
     }
 
     public accept(driverId: string) {
+        if (this.status != "requested") throw new Error("Ride not pending");
         this.status = "accepted"
         this.driverId = driverId;
     }
-    
+
     public start() {
+        if (this.status != "accepted") throw new Error("Ride not accepted");
         this.status = "in_progress"
     }
     public getStatus(): string {

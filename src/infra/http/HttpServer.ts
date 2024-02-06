@@ -21,11 +21,12 @@ export class ExpressAdapter implements HttpServer {
         this.app[method](url, async function (req: any, res: any) {
             try {
                 const output = await callback(req.params, req.body)
+                console.log(`{"status": 200, "method": "${method}", "url": "${url}", "params": "${JSON.stringify(req.params)}", "body": "${JSON.stringify(req.body)}", "output": "${JSON.stringify(output)}}"`)
                 res.status(200).json(output)
             } catch (e: any) {
-                res.status(422).json({message: e.message})
+                console.log(`{"status": 422, "method": "${method}", "url": "${url}", "params": "${JSON.stringify(req.params)}", "body": "${JSON.stringify(req.body)}", "output": "${JSON.stringify({ message: e.message })}}"`)
+                res.status(422).json({ message: e.message })
             }
         })
     }
-
 }

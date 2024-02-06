@@ -10,6 +10,8 @@ import { RideRepositoryDatabase } from "./infra/repository/RideRepository";
 import DatabaseConnection, { PgPromiseAdapter } from "./infra/database/DatabaseConnection";
 import { MainController } from "./infra/http/MainController";
 import { ExpressAdapter, HttpServer } from "./infra/http/HttpServer";
+import AcceptRide from "./application/UserCase/AcceptRide";
+import StartRide from "./application/UserCase/StartRide";
 
 dotenv.config({
   path: path.resolve(process.cwd(), ".env"),
@@ -22,7 +24,9 @@ const signup = new Signup(accountRepository)
 const getAccount = new GetAccount(accountRepository)
 const requestRide = new RequestRide(accountRepository, rideRepository)
 const getRide = new GetRide(accountRepository, rideRepository)
+const acceptRide = new AcceptRide(accountRepository, rideRepository)
+const startRide = new StartRide(rideRepository)
 const httpServer: HttpServer = new ExpressAdapter()
-new  MainController(httpServer, signup, getAccount, requestRide, getRide)
+new  MainController(httpServer, signup, getAccount, requestRide, getRide, acceptRide, startRide)
 httpServer.listen(8081)
 

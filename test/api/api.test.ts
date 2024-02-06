@@ -77,7 +77,7 @@ test("Deve testar se cria uma viagem com sucesso", async () => {
     const inputRide = {
         "passengerId": accountId,
         "from": {
-            "lat":-30.0495304,
+            "lat": -30.0495304,
             "long": -51.2313074
         },
         "to": {
@@ -100,4 +100,39 @@ test("Deve testar se cria uma viagem com sucesso", async () => {
     expect(output.passenger.accountId).toBe(accountId)
     expect(output.passenger.name).toBe("Carlos Silva")
     expect(output.passenger.email).toBe(email)
+})
+
+
+test("Deve testar se aceitar uma viagem com sucesso", async () => {
+    const driver = await axios.post('http://localhost:8081/accounts', { "name": "Jose Silva", "email": `jose${crypto.randomUUID()}@teste.com.br`, "cpf": "840.862.960-39", carPlate: "JYV2601", isPassenger: false, isDriver: true })
+    const passenger = await axios.post('http://localhost:8081/accounts', { "name": "Carlos Silva", "email": `carlos${crypto.randomUUID()}@teste.com.br`, "cpf": "840.862.960-39", "isPassenger": true, "isDriver": false })
+    const ride = await axios.post('http://localhost:8081/rides', { "passengerId": passenger.data.accountId, "from": { "lat": -30.0495304, "long": -51.2313074 }, "to": { "lat": -30.0802953, "long": -51.2215673 } })
+    await axios.put(`http://localhost:8081/rides/${ride.data.rideId}/accept`, { driverId: driver.data.accountId })
+    const response = await axios.get(`http://localhost:8081/rides/${ride.data.rideId}`)
+    const output = response.data
+    expect(output.passengerId).toBe(passenger.data.accountId)
+    expect(output.driverId).toBe(driver.data.accountId)
+    expect(output.status).toBe("accepted")
+    expect(output.fromLat).toBe("-30.0495304")
+    expect(output.fromLong).toBe("-51.2313074")
+    expect(output.toLat).toBe("-30.0802953")
+    expect(output.toLong).toBe("-51.2215673")
+})
+
+
+test("Deve testar se iniciou uma viagem com sucesso", async () => {
+    const driver = await axios.post('http://localhost:8081/accounts', { "name": "Jose Silva", "email": `jose${crypto.randomUUID()}@teste.com.br`, "cpf": "840.862.960-39", carPlate: "JYV2601", isPassenger: false, isDriver: true })
+    const passenger = await axios.post('http://localhost:8081/accounts', { "name": "Carlos Silva", "email": `carlos${crypto.randomUUID()}@teste.com.br`, "cpf": "840.862.960-39", "isPassenger": true, "isDriver": false })
+    const ride = await axios.post('http://localhost:8081/rides', { "passengerId": passenger.data.accountId, "from": { "lat": -30.0495304, "long": -51.2313074 }, "to": { "lat": -30.0802953, "long": -51.2215673 } })
+    await axios.put(`http://localhost:8081/rides/${ride.data.rideId}/accept`, { driverId: driver.data.accountId })
+    await axios.put(`http://localhost:8081/rides/${ride.data.rideId}/start`, { driverId: driver.data.accountId })
+    const response = await axios.get(`http://localhost:8081/rides/${ride.data.rideId}`)
+    const output = response.data
+    expect(output.passengerId).toBe(passenger.data.accountId)
+    expect(output.driverId).toBe(driver.data.accountId)
+    expect(output.status).toBe("in_progress")
+    expect(output.fromLat).toBe("-30.0495304")
+    expect(output.fromLong).toBe("-51.2313074")
+    expect(output.toLat).toBe("-30.0802953")
+    expect(output.toLong).toBe("-51.2215673")
 })
